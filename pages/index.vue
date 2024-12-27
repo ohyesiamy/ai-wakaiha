@@ -14,6 +14,8 @@ const webhookURL = `https://discord.com/api/webhooks/1315645560862015598/pkjkE9m
 
 const isModalVisible = ref(false);
 const urlErrors = ref<string[]>([]);
+const isConfirmationModalVisible = ref(false);
+const isRequiredModalVisible = ref(false);
 
 function addUrl() {
     form.value.urls.push('');
@@ -37,25 +39,40 @@ function validateUrls() {
 }
 
 async function submitForm() {
-    if (!validateUrls()) {
-        console.error('URL形式が正しくありません');
+    if (!form.value.id || !form.value.importance || !form.value.reply || !form.value.content) {
+        isRequiredModalVisible.value = true;
         return;
     }
 
-    if (form.value.reply !== '要返答' && form.value.moderator === '') {
-        console.error('返答希望モデレーターを選択してください');
+    if (!validateUrls() && !form.value.content.includes('http')) {
+        isConfirmationModalVisible.value = true;
         return;
     }
 
+    sendForm();
+}
+
+function confirmSend() {
+    isConfirmationModalVisible.value = false;
+    sendForm();
+}
+
+function cancelSend() {
+    isConfirmationModalVisible.value = false;
+}
+
+async function sendForm() {
     const payload = {
-        content: "新しい通報が届きました。",
+        // テスト用：吉川に通知が飛ぶ
+        // content: '<@1030054142137352252>',
+        // 本番用：モデレーターに通知が飛ぶ
+        content: '<@&1314282270563237939>',
         embeds: [
             {
                 title: "通報内容",
                 fields: [
-                    { name: "ID", value: form.value.id || "未入力", inline: true },
                     { name: "相談内容", value: form.value.content || "未入力", inline: false },
-                    { name: "URL", value: form.value.urls.join(", ") || "未入力", inline: false },
+                    { name: "ID", value: form.value.id || "未入力", inline: true },
                     { name: "重要度", value: form.value.importance || "未入力", inline: true },
                     { name: "返答", value: form.value.reply || "未入力", inline: true },
                     { name: "返答希望モデレーター", value: form.value.moderator || "未入力", inline: true },
@@ -79,6 +96,20 @@ async function submitForm() {
 
 function closeModal() {
     isModalVisible.value = false;
+}
+
+function adjustTextareaHeight() {
+    const textarea = document.querySelector('textarea');
+    if (textarea) {
+        textarea.style.height = 'auto';
+        const scrollHeight = textarea.scrollHeight;
+        const maxHeight = parseInt(getComputedStyle(textarea).lineHeight) * 20; // 20行分の高さ
+        textarea.style.height = Math.min(scrollHeight, maxHeight) + 'px';
+    }
+}
+
+function closeRequiredModal() {
+    isRequiredModalVisible.value = false;
 }
 
 </script>
@@ -107,16 +138,12 @@ function closeModal() {
         .form_input
             label(for="content") 相談内容(必須)<br>
                 span ※運営にわかりやすいようにご記入ください。
-            textarea(type="text" placeholder="OOさんの発言が暴力的です。" v-model="form.content")
-        .form_input
-            label(for="urls") 問題視している投稿のURL
-            ul.url-input
-                li(v-for="(url, index) in form.urls" :key="index").url-input.url-list
-                    input(type="text" placeholder="URL形式でないとエラーが出ます。" v-model="form.urls[index]").url-input
-                    span.error(v-if="urlErrors[index]" style="color: red;") {{ urlErrors[index] }}
-                    .url_buttons
-                        button(@click="addUrl" class="add-button" v-if="index === form.urls.length - 1") +
-                        button(@click="removeUrl(index)" v-if="form.urls.length > 1 && index === form.urls.length - 1" class="remove-button") -
+            textarea(type="text" placeholder="相談内容を記入してください" v-model="form.content" @input="adjustTextareaHeight" ref="textarea" style="overflow-y: auto;")
+        //- .form_input
+        //-     label(for="urls") 問題視している投稿のURL
+        //-     ul.url-input
+        //-         textarea(type="text" placeholder="運営に確認してほしいURLを貼り付けてください。改行で複数貼ることができます" v-model="form.urls[index]").url-input
+        //-         span.error(v-if="urlErrors[index]" style="color: red;") {{ urlErrors[index] }}
         .form_input
             label(for="importance") 重要度(必須)
             select(name="importance" v-model="form.importance")
@@ -146,6 +173,18 @@ function closeModal() {
             p 送信が完了しました。
             button(@click="closeModal") 閉じる
 
+    .modal(v-if="isConfirmationModalVisible")
+        .modal-content
+            p URLが含まれていませんが、本当に送信しますか？
+            .choices
+                button(@click="confirmSend") 送信
+                button(@click="cancelSend").cancelButton キャンセル
+
+    .modal(v-if="isRequiredModalVisible")
+        .modal-content
+            p 必須項目を入力してください。
+            button(@click="closeRequiredModal") 戻る
+
 </template>
 
 <style scoped lang="sass">
@@ -154,6 +193,7 @@ function closeModal() {
 
 $accent-color: #FF5733
 $primary-color: #ab60a4
+
 .heading
     font-size: 2.618rem
     font-weight: bold
@@ -227,7 +267,7 @@ $primary-color: #ab60a4
             background-repeat: no-repeat
             background-position: right 0.5rem center
             background-size: 10px 10px
-            background-color: darken(white, 10%)
+            background-color: adjust(white, 10%)
             border-radius: 6px
             border: 1px solid var(--accent)
             padding: 0.618rem
@@ -249,11 +289,11 @@ $primary-color: #ab60a4
                 text-align: center
 
             &:hover
-                background-color: darken($accent-color, 10%)
+                background-color: adjust($accent-color, 10%)
                 box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15)
 
             &:active
-                background-color: darken($accent-color, 15%)
+                background-color: adjust($accent-color, 15%)
                 transform: translateY(2px)
                 box-shadow: 0 3px 4px rgba(0, 0, 0, 0.2)
 
@@ -266,9 +306,10 @@ $primary-color: #ab60a4
     background-color: var(--primary)
     color: var(--bg)
     border: none
-    border-radius: 50%
+    border-radius: 4px
     width: 2rem
     height: 2rem
+    padding-inline: 2rem
     display: flex
     justify-content: center
     align-items: center
@@ -284,9 +325,7 @@ $primary-color: #ab60a4
 
 .url
     &-input
-        width: 60%
-        @include mq(iPadPro)
-            width: 100%
+        width: 100%
     &-list
         display: flex
         flex-flow: column nowrap
@@ -332,5 +371,21 @@ $primary-color: #ab60a4
         transition: background-color 0.3s, transform 0.2s
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1)
 
+textarea
+    min-height: calc(1.5em * 10) // 10行分の高さ
+    max-height: calc(1.5em * 20) // 20行分の高さ
+    overflow-y: auto
+.choices
+    display: flex
+    flex-flow: row wrap
+    justify-content: center
+    align-items: center
+    gap: 0.44rem
+    button
+        margin-block-start: 0.4rem
+.cancelButton
+    background-color: #acd2aa
+    color: var(--bg)
 </style>
+
 
