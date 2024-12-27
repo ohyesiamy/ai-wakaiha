@@ -71,7 +71,7 @@ async function sendForm() {
             {
                 title: "通報内容",
                 fields: [
-                    { name: "相談内容", value: form.value.content || "未入力", inline: false },
+                    // { name: "相談内容", value: form.value.content || "未入力", inline: false },
                     { name: "ID", value: form.value.id || "未入力", inline: true },
                     { name: "重要度", value: form.value.importance || "未入力", inline: true },
                     { name: "返答", value: form.value.reply || "未入力", inline: true },
