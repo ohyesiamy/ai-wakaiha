@@ -1,0 +1,336 @@
+<script setup lang="ts">
+import { ref } from 'vue';
+
+const form = ref({
+    id: '',
+    content: '',
+    urls: [''],
+    importance: 'その他相談',
+    reply: '要返答',
+    moderator: '誰でも',
+});
+
+const webhookURL = `https://discord.com/api/webhooks/1315645560862015598/pkjkE9mAMNNG41AcrqtVGyuL0_3vz4_NHqG9gYF2Cch_bXYxY-P4ffxFEayDbdw6u9tc`;
+
+const isModalVisible = ref(false);
+const urlErrors = ref<string[]>([]);
+
+function addUrl() {
+    form.value.urls.push('');
+    urlErrors.value.push('');
+}
+
+function removeUrl(index: number) {
+    if (form.value.urls.length > 1) {
+        form.value.urls.splice(index, 1);
+        urlErrors.value.splice(index, 1);
+    }
+}
+
+function validateUrls() {
+    const urlPattern = RegExp('^(https?:\\/\\/)?'+
+                           '(([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}'+
+                           '(\\/[-a-z\\d%_.~+]*)*', 'i');
+
+    urlErrors.value = form.value.urls.map(url => urlPattern.test(url) ? '' : 'URL形式が正しくありません');
+    return urlErrors.value.every(error => error === '');
+}
+
+async function submitForm() {
+    if (!validateUrls()) {
+        console.error('URL形式が正しくありません');
+        return;
+    }
+
+    if (form.value.reply !== '要返答' && form.value.moderator === '') {
+        console.error('返答希望モデレーターを選択してください');
+        return;
+    }
+
+    const payload = {
+        content: "新しい通報が届きました。",
+        embeds: [
+            {
+                title: "通報内容",
+                fields: [
+                    { name: "ID", value: form.value.id || "未入力", inline: true },
+                    { name: "相談内容", value: form.value.content || "未入力", inline: false },
+                    { name: "URL", value: form.value.urls.join(", ") || "未入力", inline: false },
+                    { name: "重要度", value: form.value.importance || "未入力", inline: true },
+                    { name: "返答", value: form.value.reply || "未入力", inline: true },
+                    { name: "返答希望モデレーター", value: form.value.moderator || "未入力", inline: true },
+                ],
+            },
+        ],
+    };
+
+    const { data, error } = await useFetch(webhookURL, {
+        method: 'POST',
+        body: payload,
+    });
+
+    if (error.value) {
+        console.error('Error sending data:', error.value);
+    } else {
+        console.log('Data sent successfully:', data.value);
+        isModalVisible.value = true;
+    }
+}
+
+function closeModal() {
+    isModalVisible.value = false;
+}
+
+</script>
+<template lang="pug">
+.page
+    .heading.gutter.block-distance
+        h1 AI和解派 公式ポータル
+    .links.gutter.block-distance
+        h2 リンク集
+        ul.links-list
+            li
+                a(href="https://genai.miraheze.org/wiki/%E3%83%A1%E3%82%A4%E3%83%B3%E3%83%9A%E3%83%BC%E3%82%B8").links-button
+                    Icon(name='ooui:logo-meta-wiki').icon
+                    p 公式Wiki
+            li
+                a(href="https://discord.gg/gXy73z9M").links-button.discord
+                    Icon(name="ic:sharp-discord").icon
+                    p Discord
+    .form.gutter.block-distance
+        .form_heading
+            Icon(name='material-symbols:mail' size="1.618rem").icon
+            h2 通報・連絡フォーム
+        .form_input
+            label(for="id") あなたのXアカウントID(必須)
+            input(type="text" placeholder="wakaiha" v-model="form.id")
+        .form_input
+            label(for="content") 相談内容(必須)<br>
+                span ※運営にわかりやすいようにご記入ください。
+            textarea(type="text" placeholder="OOさんの発言が暴力的です。" v-model="form.content")
+        .form_input
+            label(for="urls") 問題視している投稿のURL
+            ul.url-input
+                li(v-for="(url, index) in form.urls" :key="index").url-input.url-list
+                    input(type="text" placeholder="URL形式でないとエラーが出ます。" v-model="form.urls[index]").url-input
+                    span.error(v-if="urlErrors[index]" style="color: red;") {{ urlErrors[index] }}
+                    .url_buttons
+                        button(@click="addUrl" class="add-button" v-if="index === form.urls.length - 1") +
+                        button(@click="removeUrl(index)" v-if="form.urls.length > 1 && index === form.urls.length - 1" class="remove-button") -
+        .form_input
+            label(for="importance") 重要度(必須)
+            select(name="importance" v-model="form.importance")
+                option(value="その他相談") その他相談
+                option(value="気になる") 気になる
+                option(value="至急要請") 至急要請
+        .form_input
+            label(for="reply") 運営からの返答を求めますか？(必須)
+            select(name="reply" v-model="form.reply")
+                option(value="要返答") 求めません
+                option(value="返答不要") 求めます
+        .form_input(v-if="form.reply != '要返答'")
+            label(for="moderator") 返答希望モデレーター
+            select(name="moderator" v-model="form.moderator")
+                option(value="誰でも") 誰でも
+                option(value="吉川飛空") 吉川飛空
+                option(value="棄印きう") 棄印きう
+                option(value="46Rb") 46Rb
+                option(value="ナチュレ") ナチュレ
+                option(value="La") La
+
+        .form_button
+            button(@click="submitForm") 送信
+
+    .modal(v-if="isModalVisible")
+        .modal-content
+            p 送信が完了しました。
+            button(@click="closeModal") 閉じる
+
+</template>
+
+<style scoped lang="sass">
+@use "@osaxyz/universtyle" as osa
+@use "@osaxyz/mediaquery" as *
+
+$accent-color: #FF5733
+$primary-color: #ab60a4
+.heading
+    font-size: 2.618rem
+    font-weight: bold
+    @include mq(iPadPro)
+        font-size: 1.618rem
+
+.block-distance
+    margin-block-end: 4.4rem
+.page
+    padding-block: 5rem
+    h2
+        font-size: 1.618rem
+        font-weight: bold
+        padding-block: 2rem
+.links
+    &-list
+
+        display: flex
+        flex-flow: row wrap
+        justify-content: space-between
+        align-items: center
+        gap: 2rem
+        @include mq(iPadPro)
+            flex-flow: column wrap
+            gap: 2rem
+        li
+            width: 45%
+            @include mq(iPadPro)
+                width: 100%
+
+    &-button
+        border-radius: 12px
+        padding: 1rem
+        background-color: var(--primary)
+        color: var(--bg)
+        font-weight: bold
+        font-size: 1.618rem
+        display: flex
+        flex-flow: row wrap
+        justify-content: center
+        align-items: center
+        gap: 1rem
+        width: 100%
+        box-shadow: 0 0 12px 0 rgba(0, 0, 0, 0.4)
+.form
+    &_heading
+        display: flex
+        flex-flow: row wrap
+        justify-content: flex-start
+        align-items: center
+        gap: 1rem
+    &_input
+        display: flex
+        flex-flow: column wrap
+        justify-content: flex-start
+        align-items: flex-start
+        gap: 0.44rem
+        margin-block-end: 1.24rem
+        label
+            span
+                font-size: 0.8rem
+                color: red
+        input, textarea
+            border-radius: 6px
+            border: 1px solid var(--accent)
+            padding: 0.618rem
+            width: 100%
+        select
+            appearance: none
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10"><path fill="none" stroke="black" stroke-width="1" d="M0 3l5 5 5-5"/></svg>')
+            background-repeat: no-repeat
+            background-position: right 0.5rem center
+            background-size: 10px 10px
+            background-color: darken(white, 10%)
+            border-radius: 6px
+            border: 1px solid var(--accent)
+            padding: 0.618rem
+            width: 100%
+    &_button
+        button
+            background-color: var(--accent)
+            color: var(--bg)
+            font-weight: bold
+            font-size: 1.24rem
+            padding: 1rem 3.6rem
+            border-radius: 8px
+            border: none
+            cursor: pointer
+            transition: background-color 0.3s, transform 0.2s
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1)
+            @include mq(iPadPro)
+                width: 100%
+                text-align: center
+
+            &:hover
+                background-color: darken($accent-color, 10%)
+                box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15)
+
+            &:active
+                background-color: darken($accent-color, 15%)
+                transform: translateY(2px)
+                box-shadow: 0 3px 4px rgba(0, 0, 0, 0.2)
+
+.icon
+    object-fit: cover
+.discord
+    background-color: #5865F2
+
+.add-button, .remove-button
+    background-color: var(--primary)
+    color: var(--bg)
+    border: none
+    border-radius: 50%
+    width: 2rem
+    height: 2rem
+    display: flex
+    justify-content: center
+    align-items: center
+    cursor: pointer
+    transition: background-color 0.3s
+
+    &:hover
+        background-color: darken($primary-color, 10%)
+
+    &:active
+        background-color: darken($primary-color, 15%)
+        transform: translateY(1px)
+
+.url
+    &-input
+        width: 60%
+        @include mq(iPadPro)
+            width: 100%
+    &-list
+        display: flex
+        flex-flow: column nowrap
+        justify-content: flex-start
+        align-items: flex-start
+        gap: 0.44rem
+        li
+            width: 100%
+    &_buttons
+        display: flex
+        flex-flow: row wrap
+        justify-content: flex-start
+        align-items: center
+        gap: 0.44rem
+
+.modal
+    position: fixed
+    top: 0
+    left: 0
+    width: 100%
+    height: 100%
+    background-color: rgba(0, 0, 0, 0.5)
+    display: flex
+    justify-content: center
+    align-items: center
+
+.modal-content
+    background-color: white
+    padding: 2rem
+    border-radius: 8px
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1)
+    text-align: center
+    button
+        margin-block-start: 0.24rem
+        background-color: var(--primary)
+        color: var(--bg)
+        font-weight: bold
+        font-size: 1.24rem
+        padding: 0.618rem 1.24rem
+        border-radius: 6px
+        border: none
+        cursor: pointer
+        transition: background-color 0.3s, transform 0.2s
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1)
+
+</style>
+
