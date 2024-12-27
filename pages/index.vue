@@ -66,7 +66,7 @@ async function sendForm() {
         // テスト用：吉川に通知が飛ぶ
         // content: '<@1030054142137352252>',
         // 本番用：モデレーターに通知が飛ぶ
-        content: '<@&1314282270563237939>',
+        content: form.value.content + '<@&1314282270563237939>',
         embeds: [
             {
                 title: "通報内容",
