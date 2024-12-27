@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+
 
 const form = ref({
     id: '',
@@ -16,6 +16,8 @@ const isModalVisible = ref(false);
 const urlErrors = ref<string[]>([]);
 const isConfirmationModalVisible = ref(false);
 const isRequiredModalVisible = ref(false);
+
+const contentError = computed(() => form.value.content.length > 3500 ? '文字数は3500文字以内でご記入ください。' : '');
 
 function addUrl() {
     form.value.urls.push('');
@@ -41,6 +43,10 @@ function validateUrls() {
 async function submitForm() {
     if (!form.value.id || !form.value.importance || !form.value.reply || !form.value.content) {
         isRequiredModalVisible.value = true;
+        return;
+    }
+
+    if (form.value.content.length > 3500) {
         return;
     }
 
@@ -138,12 +144,8 @@ function closeRequiredModal() {
         .form_input
             label(for="content") 相談内容(必須)<br>
                 span ※運営にわかりやすいようにご記入ください。
-            textarea(type="text" placeholder="相談内容を記入してください" v-model="form.content" @input="adjustTextareaHeight" ref="textarea" style="overflow-y: auto;")
-        //- .form_input
-        //-     label(for="urls") 問題視している投稿のURL
-        //-     ul.url-input
-        //-         textarea(type="text" placeholder="運営に確認してほしいURLを貼り付けてください。改行で複数貼ることができます" v-model="form.urls[index]").url-input
-        //-         span.error(v-if="urlErrors[index]" style="color: red;") {{ urlErrors[index] }}
+            textarea(type="text" placeholder="相談内容を記入してください" v-model="form.content" @input="adjustTextareaHeight" ref="textarea" style="overflow-y: auto;" maxlength="3500")
+        span.error(v-if="contentError") {{ contentError }}
         .form_input
             label(for="importance") 重要度(必須)
             select(name="importance" v-model="form.importance")
@@ -386,6 +388,10 @@ textarea
 .cancelButton
     background-color: #acd2aa
     color: var(--bg)
+
+.error
+    color: red
+    font-size: 0.8rem
 </style>
 
 
