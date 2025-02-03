@@ -10,7 +10,7 @@ const form = ref({
     moderator: '誰でも',
 });
 
-const webhookURL = `https://discord.com/api/webhooks/1315645560862015598/pkjkE9mAMNNG41AcrqtVGyuL0_3vz4_NHqG9gYF2Cch_bXYxY-P4ffxFEayDbdw6u9tc`;
+const webhookURL = `https://discord.com/api/webhooks/1329013057447399475/W9ttkpu6Eli8CrQolcNbwRpVx1q5RU6Ii5QIkImfrk-gH7lLbEOZ3FtkKS6wwuFJRPQs`;
 
 const isModalVisible = ref(false);
 const urlErrors = ref<string[]>([]);
