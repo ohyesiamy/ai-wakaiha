@@ -1,0 +1,2 @@
+- use pnpm
+- Always respond me in japanese

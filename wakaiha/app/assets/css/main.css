@@ -1,0 +1,47 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+@theme static {
+  --font-sans: "source-han-sans-japanese", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+
+  --color-green-50: #EFFDF5;
+  --color-green-100: #D9FBE8;
+  --color-green-200: #B3F5D1;
+  --color-green-300: #75EDAE;
+  --color-green-400: #00DC82;
+  --color-green-500: #00C16A;
+  --color-green-600: #00A155;
+  --color-green-700: #007F45;
+  --color-green-800: #016538;
+  --color-green-900: #0A5331;
+  --color-green-950: #052E16;
+}
+
+/* Adobe Fonts (TypeKit) - font-weight mapping */
+/* source-han-sans-japanese weights:
+   - 100: ExtraLight
+   - 200: Light
+   - 300: Normal
+   - 400: Regular
+   - 500: Medium
+   - 700: Bold
+   - 900: Heavy
+*/
+
+.wf-loading body {
+  visibility: hidden;
+}
+
+.wf-active body,
+.wf-inactive body {
+  visibility: visible;
+}
+
+/* Font weight utilities */
+.font-extralight { font-weight: 100; }
+.font-light { font-weight: 200; }
+.font-normal { font-weight: 300; }
+.font-regular { font-weight: 400; }
+.font-medium { font-weight: 500; }
+.font-bold { font-weight: 700; }
+.font-heavy { font-weight: 900; }
